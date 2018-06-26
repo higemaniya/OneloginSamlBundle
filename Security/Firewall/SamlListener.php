@@ -3,6 +3,7 @@
 namespace Hslavich\OneloginSamlBundle\Security\Firewall;
 
 use Hslavich\OneloginSamlBundle\Security\Authentication\Token\SamlToken;
+use Hslavich\OneloginSamlBundle\Security\Authentication\Token\SamlTokenFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -15,6 +16,7 @@ class SamlListener extends AbstractAuthenticationListener
      * @var \OneLogin_Saml2_Auth
      */
     protected $oneLoginAuth;
+    protected $tokenFactory;
 
     /**
      * @param \OneLogin_Saml2_Auth $oneLoginAuth
@@ -22,6 +24,14 @@ class SamlListener extends AbstractAuthenticationListener
     public function setOneLoginAuth(\OneLogin_Saml2_Auth $oneLoginAuth)
     {
         $this->oneLoginAuth = $oneLoginAuth;
+    }
+
+    /**
+     * @param SamlTokenFactoryInterface $tokenFactory
+     */
+    public function setTokenFactory(SamlTokenFactoryInterface $tokenFactory)
+    {
+        $this->tokenFactory = $tokenFactory;
     }
 
     /**
@@ -43,8 +53,6 @@ class SamlListener extends AbstractAuthenticationListener
 
         $attributes = $this->oneLoginAuth->getAttributes();
         $attributes['sessionIndex'] = $this->oneLoginAuth->getSessionIndex();
-        $token = new SamlToken();
-        $token->setAttributes($attributes);
 
         if (isset($this->options['username_attribute'])) {
             if (!array_key_exists($this->options['username_attribute'], $attributes)) {
@@ -56,7 +64,7 @@ class SamlListener extends AbstractAuthenticationListener
         } else {
             $username = $this->oneLoginAuth->getNameId();
         }
-        $token->setUser($username);
+        $token = $this->tokenFactory->createToken($username, $attributes, array());
 
         return $this->authenticationManager->authenticate($token);
     }

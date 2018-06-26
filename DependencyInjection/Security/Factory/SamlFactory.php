@@ -78,6 +78,10 @@ class SamlFactory extends AbstractFactory
     protected function createListener($container, $id, $config, $userProvider)
     {
         $listenerId = parent::createListener($container, $id, $config, $userProvider);
+        $factoryId = $config['token_factory'] ?: 'hslavich_onelogin_saml.saml_token_factory';
+        $definition = $container->getDefinition($listenerId);
+        $definition->addMethodCall('setTokenFactory', array(new Reference($factoryId)));
+
         $this->createLogoutHandler($container, $id, $config);
 
         return $listenerId;
